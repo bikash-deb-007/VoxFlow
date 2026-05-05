@@ -1,5 +1,5 @@
 @echo off
 title VoxFlow — Voice to Text
-cd /d C:\Users\bikas\Downloads
+cd /d "%~dp0"
 python voxflow.py
-pause
+if %errorlevel% neq 0 pause

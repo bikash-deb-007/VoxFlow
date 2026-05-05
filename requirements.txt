@@ -1,0 +1,7 @@
+openai-whisper
+sounddevice
+numpy
+pynput
+pyperclip
+pystray
+Pillow
