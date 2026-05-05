@@ -68,8 +68,7 @@ class HotkeyListener:
 
         if self._matches_trigger(key) and self._trigger_held:
             self._trigger_held = False
-            if not self._modifier_held:
-                threading.Thread(target=self.on_stop, daemon=True).start()
+            threading.Thread(target=self.on_stop, daemon=True).start()
 
     def _matches_trigger(self, key) -> bool:
         trigger = self.trigger_char.lower()
