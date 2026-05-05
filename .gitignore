@@ -7,6 +7,14 @@ __pycache__/
 venv/
 .venv/
 
+# User settings (generated at runtime)
+config.json
+
+# PyInstaller build output
+dist/
+build/
+*.spec
+
 # OS
 .DS_Store
 Thumbs.db
