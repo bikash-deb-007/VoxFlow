@@ -2,6 +2,7 @@ import sys
 import os
 import signal
 import threading
+import tkinter as tk
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -23,11 +24,12 @@ class VoxFlow:
             model_name=self._cfg["model"],
             language=self._cfg["language"],
         )
-        self._overlay = RecordingOverlay()
-        self._settings = SettingsWindow(on_save_callback=self._on_settings_saved)
+        self._tk_root: tk.Tk | None = None
+        self._overlay: RecordingOverlay | None = None
+        self._settings: SettingsWindow | None = None
         self._tray = TrayApp(
             on_quit=self._quit,
-            on_settings=self._settings.open,
+            on_settings=lambda: self._settings.open() if self._settings else None,
             on_toggle_recording=self._on_hotkey_start,
         )
         self._hotkey = HotkeyListener(
@@ -41,11 +43,13 @@ class VoxFlow:
         if self._recorder.is_recording:
             return
         self._tray.set_recording()
-        self._overlay.show()
+        if self._overlay:
+            self._overlay.show()
         self._recorder.start()
 
     def _on_hotkey_stop(self) -> None:
-        self._overlay.hide()
+        if self._overlay:
+            self._overlay.hide()
         self._tray.set_transcribing()
         audio = self._recorder.stop()
 
@@ -74,9 +78,9 @@ class VoxFlow:
 
     def _quit(self) -> None:
         self._hotkey.stop()
-        self._overlay.hide()
         self._tray.stop()
-        sys.exit(0)
+        if self._tk_root:
+            self._tk_root.after(0, self._tk_root.destroy)
 
     def run(self) -> None:
         print("╔══════════════════════════════════════╗")
@@ -96,8 +100,17 @@ class VoxFlow:
         print(f"[VoxFlow] Hold {mod}+{trig} anywhere to speak.")
         print("[VoxFlow] Right-click tray icon → Settings or Quit.\n")
 
+        # Tkinter must own the main thread; pystray runs in background
+        self._tk_root = tk.Tk()
+        self._tk_root.withdraw()
+        self._overlay = RecordingOverlay(self._tk_root)
+        self._settings = SettingsWindow(self._tk_root, on_save_callback=self._on_settings_saved)
+
+        tray_thread = threading.Thread(target=self._tray.run, daemon=True)
+        tray_thread.start()
+
         signal.signal(signal.SIGINT, lambda s, f: self._quit())
-        self._tray.run()
+        self._tk_root.mainloop()
 
 
 if __name__ == "__main__":
